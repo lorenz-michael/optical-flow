@@ -1,0 +1,11 @@
+#Folders
+.idea
+__pycache__
+#Temp files
+*.tmp
+#Log files
+*.csv
+*.hdf5
+#Media files
+*.jpg
+*.jpeg
