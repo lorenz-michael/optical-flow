@@ -115,49 +115,63 @@ def mean_squared_error_reg(y_true, y_pred):
     sh = y_pred.get_shape()
     y_true.set_shape((sh[0]._value, sh[1]._value + 3, sh[2]._value, sh[3]._value))
     # Split reference into flow, intensities and Transformation Matrix
-    y_true_flow = y_true[:, 0:2, :, :]
-    y_pred_flow = y_pred[:, 0:2, :, :]
+    y_true_flow = y_true[:, :, :, 0:2]
+    y_pred_flow = y_pred[:, :, :, 0:2]
     y_pred_flow = K.clip(y_pred, -1e7, 1e7)
-    mean_squared_error_reg = K.mean(K.square(y_pred_flow - y_true_flow), axis=1)
+    mean_squared_error_reg = K.mean(K.square(y_pred_flow - y_true_flow), axis=3)
     return mean_squared_error_reg
 
 
 def euclidean_distance(y_true, y_pred):
-    return K.sqrt(K.sum(K.square(y_true - y_pred), axis=1, keepdims=True))
+    return K.sqrt(K.sum(K.square(y_true - y_pred), axis=3, keepdims=True))
 
 
 def l2_norm_sum(y_true, y_pred):
-    return K.sum(K.sum(K.sum(K.square(y_true - y_pred), axis=1, keepdims=True), axis=2, keepdims=True), axis=3, keepdims=True)
+    return K.sum(K.sum(K.sum(K.square(y_true - y_pred), axis=3, keepdims=True), axis=1, keepdims=True), axis=2, keepdims=True)
 
 
 def ed_clip(y_true, y_pred):
     y_pred = K.clip(y_pred, -1e7, 1e7)
-    return K.sqrt(K.sum(K.square(y_true - y_pred), axis=1, keepdims=True))
+    return K.sqrt(K.sum(K.square(y_true - y_pred), axis=3, keepdims=True))
 
 
 def ed_sum2(y_true, y_pred):
     y_pred = K.clip(y_pred, -1e7, 1e7)
-    return K.sum(K.sum(K.sqrt(K.sum(K.square(y_true - y_pred), axis=1, keepdims=True)), axis=2, keepdims=True), axis=3, keepdims=True)
+    return K.sum(K.sum(K.sqrt(K.sum(K.square(y_true - y_pred), axis=3, keepdims=True)), axis=1, keepdims=True), axis=2, keepdims=True)
 
 
 def ed_norm_sum2(y_true, y_pred):
+    # # Settings
+    # alpha = 2.0  # 1.5
+    # beta = -2.0  # -1.5
+    # # Correct init shape of y_pred (correct empty tensor)
+    # sh = y_pred.get_shape()
+    # #y_true.set_shape((sh[0]._value, sh[1]._value, sh[2]._value, sh[3]._value))  #Modified
+    # y_true.set_shape((sh[0], sh[1], sh[2], sh[3]))
+    # y_pred = K.clip(y_pred, -1e7, 1e7)
+    # y_true_flow = y_true[:, 0:2, :, :]
+    #
+    # ed = K.sqrt(K.sum(K.square(y_true_flow - y_pred), axis=1, keepdims=True))
+    # ed_mag = K.sqrt(K.sum(K.square(y_true_flow), axis=1, keepdims=True))
+    # m_weight = K.exp(ed * alpha) * K.exp(ed_mag * beta)
+    # loss = ed * m_weight
+    # loss = K.sum(K.sum(loss, axis=2, keepdims=True), axis=3, keepdims=True)
+
     # Settings
     alpha = 2.0  # 1.5
     beta = -2.0  # -1.5
     # Correct init shape of y_pred (correct empty tensor)
     sh = y_pred.get_shape()
-    #y_true.set_shape((sh[0]._value, sh[1]._value, sh[2]._value, sh[3]._value))  #Modified
+    # y_true.set_shape((sh[0]._value, sh[1]._value, sh[2]._value, sh[3]._value))  #Modified
     y_true.set_shape((sh[0], sh[1], sh[2], sh[3]))
     y_pred = K.clip(y_pred, -1e7, 1e7)
-    y_true_flow = y_true[:, 0:2, :, :]
+    y_true_flow = y_true[:, :, :, 0:2]
 
-    ed = K.sqrt(K.sum(K.square(y_true_flow - y_pred), axis=1, keepdims=True))
-    ed_mag = K.sqrt(K.sum(K.square(y_true_flow), axis=1, keepdims=True))
-    # ed_norm = ed_nom / ed_den
+    ed = K.sqrt(K.sum(K.square(y_true_flow - y_pred), axis=3, keepdims=True))
+    ed_mag = K.sqrt(K.sum(K.square(y_true_flow), axis=3, keepdims=True))
     m_weight = K.exp(ed * alpha) * K.exp(ed_mag * beta)
-
     loss = ed * m_weight
-    loss = K.sum(K.sum(loss, axis=2, keepdims=True), axis=3, keepdims=True)
+    loss = K.sum(K.sum(loss, axis=1, keepdims=True), axis=2, keepdims=True)
     return loss
 
 
@@ -167,13 +181,13 @@ def ed_smooth(y_true, y_pred):
     # Clip predicted flow
     y_pred = K.clip(y_pred, -1e7, 1e7)
     # Get Tx and Ty
-    y_predx = y_pred[:, 0, :, :]
-    y_predy = y_pred[:, 1, :, :]
+    y_predx = y_pred[:, :, :, 0]
+    y_predy = y_pred[:, :, :, 1]
     # Get s (correction of -0.5, due to prior flow scaling)
     s = K.square(y_predx-0.5) + K.square(y_predy-0.5)
     # Calculate PSI
     psi = K.sqrt(K.square(s) + K.square(e))
-    return K.sqrt(K.sum(K.square(y_true - y_pred), axis=1, keepdims=True)) + (alpha * psi)
+    return K.sqrt(K.sum(K.square(y_true - y_pred), axis=3, keepdims=True)) + (alpha * psi)
 
 
 def ed_smooth_sum(y_true, y_pred):
@@ -182,22 +196,22 @@ def ed_smooth_sum(y_true, y_pred):
     # Correct init shape of y_pred (correct empty tensor)
     sh = y_pred.get_shape()
     y_true.set_shape((sh[0]._value, sh[1]._value + 3, sh[2]._value, sh[3]._value))
-    y_true_flow = y_true[:, 0:2, :, :]
-    y_pred_flow = y_pred[:, 0:2, :, :]
+    y_true_flow = y_true[:, :, :, 0:2]
+    y_pred_flow = y_pred[:, :, :, 0:2]
     # Clip predicted flow
     y_pred_flow = K.clip(y_pred_flow, -1e7, 1e7)
     # Get Tx and Ty
-    y_predx = y_pred[:, 0, :, :]
-    y_predy = y_pred[:, 1, :, :]
-    y_predx = K.expand_dims(y_predx, axis=1)
-    y_predy = K.expand_dims(y_predy, axis=1)
+    y_predx = y_pred[:, :, :, 0]
+    y_predy = y_pred[:, :, :, 1]
+    y_predx = K.expand_dims(y_predx, axis=3)
+    y_predy = K.expand_dims(y_predy, axis=3)
     # Get s (correction of -0.5, due to prior flow scaling)
     s = K.square(y_predx-0.5) + K.square(y_predy-0.5)
     # Calculate PSI
     psi = K.sqrt(K.square(s) + K.square(e))
-    ed = K.sqrt(K.sum(K.square(y_true_flow - y_pred_flow), axis=1, keepdims=True))
+    ed = K.sqrt(K.sum(K.square(y_true_flow - y_pred_flow), axis=3, keepdims=True))
     loss = ed + (alpha * psi)
-    loss = K.sum(K.sum(loss, axis=2, keepdims=True), axis=3, keepdims=True)
+    loss = K.sum(K.sum(loss, axis=1, keepdims=True), axis=2, keepdims=True)
     return loss
 
 
@@ -207,18 +221,18 @@ def ed_ae_sum(y_true, y_pred):
     # Correct init shape of y_pred (correct empty tensor)
     sh = y_pred.get_shape()
     y_true.set_shape((sh[0]._value, sh[1]._value + 3, sh[2]._value, sh[3]._value))
-    y_true_flow = y_true[:, 0:2, :, :]
-    y_pred_flow = y_pred[:, 0:2, :, :]
+    y_true_flow = y_true[:, :, :, 0:2]
+    y_pred_flow = y_pred[:, :, :, 0:2]
     # Clip predicted flow
     y_pred_flow = K.clip(y_pred, -1e7, 1e7)
     # Calculate ED + AE
-    ed = K.sqrt(K.sum(K.square(y_true_flow - y_pred_flow), axis=1, keepdims=True))
+    ed = K.sqrt(K.sum(K.square(y_true_flow - y_pred_flow), axis=31, keepdims=True))
     ae = angular_error(y_true_flow, y_pred_flow)
     ae = K.expand_dims(ae, axis=1)
     # loss = (alpha_ed * ed) + (alpha_ae * ae)
     # Sum ED + Sum AE
-    ed_sum = K.sum(K.sum(ed, axis=2, keepdims=True), axis=3, keepdims=True)
-    ae_sum = K.sum(K.sum(ae, axis=2, keepdims=True), axis=3, keepdims=True)
+    ed_sum = K.sum(K.sum(ed, axis=1, keepdims=True), axis=2, keepdims=True)
+    ae_sum = K.sum(K.sum(ae, axis=1, keepdims=True), axis=2, keepdims=True)
     loss = (alpha_ed * ed_sum) + (alpha_ae * ae_sum)
 
     loss = K.clip(loss, 0, 1e7)
@@ -233,10 +247,10 @@ def angular_error(y_true, y_pred):
     y_true *= 2
     y_pred -= 0.5
     y_pred *= 2
-    uest = y_pred[:, 0, :, :]
-    vest = y_pred[:, 1, :, :]
-    uref = y_true[:, 0, :, :]
-    vref = y_true[:, 1, :, :]
+    uest = y_pred[:, :, :, 0]
+    vest = y_pred[:, :, :, 1]
+    uref = y_true[:, :, :, 0]
+    vref = y_true[:, :, :, 1]
     # 3D Vector Angle
     nominator = (uest * uref) + (vest * vref) + 1 - epsilon
     denominator = K.sqrt(K.square(uest) + K.square(vest) + 1) * K.sqrt(K.square(uref) + K.square(vref) + 1 - epsilon)
@@ -251,14 +265,14 @@ def ed_border_sum(y_true, y_pred):
     sh = y_pred.get_shape()
     y_true.set_shape((sh[0]._value, sh[1]._value + 3, sh[2]._value, sh[3]._value))
     # Reshape Tensors
-    y_predx = y_pred[:, 0, :, :]
-    y_predy = y_pred[:, 1, :, :]
-    y_truex = y_true[:, 0, :, :]
-    y_truey = y_true[:, 1, :, :]
-    y_predx = K.expand_dims(y_predx, axis=1)
-    y_predy = K.expand_dims(y_predy, axis=1)
-    y_truex = K.expand_dims(y_truex, axis=1)
-    y_truey = K.expand_dims(y_truey, axis=1)
+    y_predx = y_pred[:, :, :, 0]
+    y_predy = y_pred[:, :, :, 1]
+    y_truex = y_true[:, :, :, 0]
+    y_truey = y_true[:, :, :, 1]
+    y_predx = K.expand_dims(y_predx, axis=3)
+    y_predy = K.expand_dims(y_predy, axis=3)
+    y_truex = K.expand_dims(y_truex, axis=3)
+    y_truey = K.expand_dims(y_truey, axis=3)
 
     # Average the predicted flow, to compensate zeropadding
     # Create binary mask
@@ -282,8 +296,8 @@ def ed_border_sum(y_true, y_pred):
     y_predx += uest
     y_predy += vest
 
-    ed = K.sum(K.sqrt(K.square(y_truex - y_predx) + K.square(y_truey - y_predy)), axis=1, keepdims=True)
-    ed_sum = K.sum(K.sum(ed, axis=2, keepdims=True), axis=3, keepdims=True)
+    ed = K.sum(K.sqrt(K.square(y_truex - y_predx) + K.square(y_truey - y_predy)), axis=3, keepdims=True)
+    ed_sum = K.sum(K.sum(ed, axis=1, keepdims=True), axis=2, keepdims=True)
     loss = ed_sum
     return ed
 
@@ -293,17 +307,17 @@ def l1_loss(y_true, y_pred):
     sh = y_pred.get_shape()
     y_true.set_shape((sh[0]._value, sh[1]._value + 3, sh[2]._value, sh[3]._value))
     # Reshape Tensors
-    uest = y_pred[:, 0, :, :]
-    vest = y_pred[:, 1, :, :]
-    uref = y_true[:, 0, :, :]
-    vref = y_true[:, 1, :, :]
-    uest = K.expand_dims(uest, axis=1)
-    vest = K.expand_dims(vest, axis=1)
-    uref = K.expand_dims(uref, axis=1)
-    vref = K.expand_dims(vref, axis=1)
+    uest = y_pred[:, :, :, 0]
+    vest = y_pred[:, :, :, 1]
+    uref = y_true[:, :, :, 0]
+    vref = y_true[:, :, :, 1]
+    uest = K.expand_dims(uest, axis=3)
+    vest = K.expand_dims(vest, axis=3)
+    uref = K.expand_dims(uref, axis=3)
+    vref = K.expand_dims(vref, axis=3)
     # Get L1 Loss
-    l1_err_u = K.sum(K.abs(uref - uest), axis=1, keepdims=True)
-    l1_err_v = K.sum(K.abs(vref - vest), axis=1, keepdims=True)
+    l1_err_u = K.sum(K.abs(uref - uest), axis=3, keepdims=True)
+    l1_err_v = K.sum(K.abs(vref - vest), axis=3, keepdims=True)
     loss = l1_err_u + l1_err_v
     loss = K.clip(loss, -1e7, 1e7)
     return loss
@@ -314,18 +328,18 @@ def l2_loss(y_true, y_pred):
     sh = y_pred.get_shape()
     y_true.set_shape((sh[0]._value, sh[1]._value + 3, sh[2]._value, sh[3]._value))
     # Reshape Tensors
-    uest = y_pred[:, 0, :, :]
-    vest = y_pred[:, 1, :, :]
-    uref = y_true[:, 0, :, :]
-    vref = y_true[:, 1, :, :]
-    uest = K.expand_dims(uest, axis=1)
-    vest = K.expand_dims(vest, axis=1)
-    uref = K.expand_dims(uref, axis=1)
-    vref = K.expand_dims(vref, axis=1)
+    uest = y_pred[:, :, :, 0]
+    vest = y_pred[:, :, :, 1]
+    uref = y_true[:, :, :, 0]
+    vref = y_true[:, :, :, 1]
+    uest = K.expand_dims(uest, axis=3)
+    vest = K.expand_dims(vest, axis=3)
+    uref = K.expand_dims(uref, axis=3)
+    vref = K.expand_dims(vref, axis=3)
 
     # Get l2 Loss
-    l2_err_u = K.sum(K.square(uref - uest), axis=1, keepdims=True)
-    l2_err_v = K.sum(K.square(vref - vest), axis=1, keepdims=True)
+    l2_err_u = K.sum(K.square(uref - uest), axis=3, keepdims=True)
+    l2_err_v = K.sum(K.square(vref - vest), axis=3, keepdims=True)
 
     #  Create binary mask for Loss (remove border pixels from keras zero padding)
     border = 5
@@ -360,16 +374,16 @@ def loc_smooth_loss(y_true, y_pred):
     sh = y_pred.get_shape()
     y_true.set_shape((sh[0]._value, sh[1]._value + 3, sh[2]._value, sh[3]._value))
     # Split reference into flow, I1 and I2
-    y_true_flow = y_true[:, 0:2, :, :]
-    y_pred_flow = y_pred[:, 0:2, :, :]
-    I1 = y_true[:, 2, :, :]
-    I2 = y_true[:, 3, :, :]
-    label = y_true[:, 4, :, :]
+    y_true_flow = y_true[:, :, :, 0:2]
+    y_pred_flow = y_pred[:, :, :, 0:2]
+    I1 = y_true[:, :, :, 2]
+    I2 = y_true[:, :, :, 3]
+    label = y_true[:, :, :, 4]
 
     # Calculate ED + local smoothness
-    l2 = K.sum(K.square(y_true_flow - y_pred_flow), axis=1, keepdims=True)
+    l2 = K.sum(K.square(y_true_flow - y_pred_flow), axis=3, keepdims=True)
     sm = K.pool2d(y_pred_flow, (3, 3), strides=(1, 1), padding='same', pool_mode='avg')
-    sm_diff = K.sum(K.abs(y_pred_flow - sm), axis=1, keepdims=True)
+    sm_diff = K.sum(K.abs(y_pred_flow - sm), axis=3, keepdims=True)
     loss = (alpha_ed * l2) + (alpha_sm * sm_diff)
     loss = K.clip(loss, 0, 1e7)
     return loss
@@ -377,14 +391,14 @@ def loc_smooth_loss(y_true, y_pred):
 
 def laplacian_smooth(y_true, y_pred):
     # Reshape Tensors
-    y_predx = y_pred[:, 0, :, :]
-    y_predy = y_pred[:, 1, :, :]
-    y_truex = y_true[:, 0, :, :]
-    y_truey = y_true[:, 1, :, :]
-    y_predx = K.expand_dims(y_predx, axis=1)
-    y_predy = K.expand_dims(y_predy, axis=1)
-    y_truex = K.expand_dims(y_truex, axis=1)
-    y_truey = K.expand_dims(y_truey, axis=1)
+    y_predx = y_pred[:, :, :, 0]
+    y_predy = y_pred[:, :, :, 1]
+    y_truex = y_true[:, :, :, 0]
+    y_truey = y_true[:, :, :, 1]
+    y_predx = K.expand_dims(y_predx, axis=3)
+    y_predy = K.expand_dims(y_predy, axis=3)
+    y_truex = K.expand_dims(y_truex, axis=3)
+    y_truey = K.expand_dims(y_truey, axis=3)
 
     y_x = y_truex - y_predx
     y_y = y_truey - y_predy
@@ -409,15 +423,15 @@ def ed_irl_loss(y_true, y_pred):
     sh = y_pred.get_shape()
     y_true.set_shape((sh[0]._value, sh[1]._value + 3, sh[2]._value, sh[3]._value))
     # Split reference into flow, I1 and I2
-    y_true_flow = y_true[:, 0:2, :, :]
-    flow_pred = y_pred[:, 0:2, :, :]
-    I1 = y_true[:, 2, :, :]
-    I2 = y_true[:, 3, :, :]
-    label = y_true[:, 4, :, :]
+    y_true_flow = y_true[:, :, :, 0:2]
+    flow_pred = y_pred[:, :, :, 0:2]
+    I1 = y_true[:, :, :, 2]
+    I2 = y_true[:, :, :, 3]
+    label = y_true[:, :, :, 4]
     # Expand dimensions
-    I1 = K.expand_dims(I1, axis=1)
-    I2 = K.expand_dims(I2, axis=1)
-    label = K.expand_dims(label, axis=1)
+    I1 = K.expand_dims(I1, axis=3)
+    I2 = K.expand_dims(I2, axis=3)
+    label = K.expand_dims(label, axis=3)
 
     # Scale Flow and Images
     flow_pred -= 0.5
@@ -439,8 +453,8 @@ def ed_irl_loss(y_true, y_pred):
     # Get coordinates for warped image (predicted flow)
     K_xu = K.round(K_xu)
     K_yv = K.round(K_yv)
-    K_u = K.round(flow_pred[:, 0, :, :])
-    K_v = K.round(flow_pred[:, 1, :, :])
+    K_u = K.round(flow_pred[:, :, :, 0])
+    K_v = K.round(flow_pred[:, :, :, 1])
     K_xu_warp = K.clip(K_xu + K_u, -1, rows)
     K_yv_warp = K.clip(K_yv + K_v, -1, cols)
     K_xu_warp = tf.to_int32(K_xu_warp)
@@ -506,19 +520,19 @@ def manhattan_distance(y_true, y_pred):
 
 
 def siamese_euclidean(y_true, y_pred):
-    y_predx = K.eval(y_pred[:, 0, :, :])
-    y_predy = K.eval(y_pred[:, 1, :, :])
-    y_truex = K.eval(y_true[:, 0, :, :])
-    y_truey = K.eval(y_true[:, 1, :, :])
+    y_predx = K.eval(y_pred[:, :, :, 0])
+    y_predy = K.eval(y_pred[:, :, :, 1])
+    y_truex = K.eval(y_true[:, :, :, 0])
+    y_truey = K.eval(y_true[:, :, :, 1])
     res = np.sqrt(np.add(np.square(y_truex - y_predx), np.square(y_truey - y_predy)))
     return res
 
 
 def siamese_euclidean_t(y_true, y_pred):
-    y_predx = y_pred[:, 0, :, :]
-    y_predy = y_pred[:, 1, :, :]
-    y_truex = y_true[:, 0, :, :]
-    y_truey = y_true[:, 1, :, :]
+    y_predx = y_pred[:, :, :, 0]
+    y_predy = y_pred[:, :, :, 1]
+    y_truex = y_true[:, :, :, 0]
+    y_truey = y_true[:, :, :, 1]
     res = K.sqrt(K.square(y_truex - y_predx) + K.square(y_truey - y_predy))
     return res
 
@@ -562,8 +576,8 @@ def csv_write(file, data, arg):
 
 
 def csv_append(file, data, epochs, time_eta):
-    temp = ([[epochs, data['loss'], data['dice_coef'], data['mean_squared_error'], data['acc'],
-              data['val_loss'], data['val_dice_coef'], data['val_mean_squared_error'], data['val_acc'], time_eta]])
+    temp = ([[epochs, data['loss'], data['dice_coef'], data['mse'], data['accuracy'],
+              data['val_loss'], data['val_dice_coef'], data['val_mse'], data['val_accuracy'], time_eta]])
     csv_write(file, temp, 'a')
 
 
@@ -874,36 +888,36 @@ def fit_train_batch(dat, set_):
                 if set_.flow_scaled == 'pixel':
                     placeholder = []
                 if set_.flow_scaled == 'pixel_pos':
-                    flowxy_train[:, 0, :, :] += (set_.w_out)
-                    flowxy_train[:, 1, :, :] += (set_.h_out)
-                    flowxy_valid[:, 0, :, :] += (set_.w_out)
-                    flowxy_valid[:, 1, :, :] += (set_.h_out)
+                    flowxy_train[:, :, :, 0] += (set_.w_out)
+                    flowxy_train[:, :, :, 1] += (set_.h_out)
+                    flowxy_valid[:, :, :, 0] += (set_.w_out)
+                    flowxy_valid[:, :, :, 1] += (set_.h_out)
                 if set_.flow_scaled == 0:
-                    flowxy_train[:, 0, :, :] /= (set_.w_out)
-                    flowxy_train[:, 1, :, :] /= (set_.h_out)
-                    flowxy_valid[:, 0, :, :] /= (set_.w_out)
-                    flowxy_valid[:, 1, :, :] /= (set_.h_out)
+                    flowxy_train[:, :, :, 0] /= (set_.w_out)
+                    flowxy_train[:, :, :, 1] /= (set_.h_out)
+                    flowxy_valid[:, :, :, 0] /= (set_.w_out)
+                    flowxy_valid[:, :, :, 1] /= (set_.h_out)
                 if set_.flow_scaled == 1:
-                    flowxy_train[:, 0, :, :] /= (2 * set_.w_out)
-                    flowxy_train[:, 1, :, :] /= (2 * set_.h_out)
+                    flowxy_train[:, :, :, 0] /= (2 * set_.w_out)
+                    flowxy_train[:, :, :, 1] /= (2 * set_.h_out)
                     flowxy_train += 0.5
-                    flowxy_valid[:, 0, :, :] /= (2 * set_.w_out)
-                    flowxy_valid[:, 1, :, :] /= (2 * set_.h_out)
+                    flowxy_valid[:, :, :, 0] /= (2 * set_.w_out)
+                    flowxy_valid[:, :, :, 1] /= (2 * set_.h_out)
                     flowxy_valid += 0.5
                 if set_.flow_scaled == 2:
-                    flowxy_train[:, 0, :, :] /= (set_.w_out)
-                    flowxy_train[:, 1, :, :] /= (set_.h_out)
+                    flowxy_train[:, :, :, 0] /= (set_.w_out)
+                    flowxy_train[:, :, :, 1] /= (set_.h_out)
                     flowxy_train += 1
-                    flowxy_valid[:, 0, :, :] /= (set_.w_out)
-                    flowxy_valid[:, 1, :, :] /= (set_.h_out)
+                    flowxy_valid[:, :, :, 0] /= (set_.w_out)
+                    flowxy_valid[:, :, :, 1] /= (set_.h_out)
                     flowxy_valid += 1
                 # [0, 8]
                 if set_.flow_scaled == 8:
-                    flowxy_train[:, 0, :, :] /= (set_.w_out / 4)
-                    flowxy_train[:, 1, :, :] /= (set_.h_out / 4)
+                    flowxy_train[:, :, :, 0] /= (set_.w_out / 4)
+                    flowxy_train[:, :, :, 1] /= (set_.h_out / 4)
                     flowxy_train += 4
-                    flowxy_valid[:, 0, :, :] /= (set_.w_out / 4)
-                    flowxy_valid[:, 1, :, :] /= (set_.h_out / 4)
+                    flowxy_valid[:, :, :, 0] /= (set_.w_out / 4)
+                    flowxy_valid[:, :, :, 1] /= (set_.h_out / 4)
                     flowxy_valid += 4
 
                 # DATA: Penalize non optical flow zones
@@ -919,14 +933,14 @@ def fit_train_batch(dat, set_):
                 if set_.loss in ('ed_ae_sum', 'l1_loss', 'l2_loss', 'loc_smooth_loss', 'ed_border_sum', 'ed_smooth_sum', 'ed_irl_loss'):
                     sh_t = flowxy_train.shape
                     out_train = np.zeros((sh_t[0], sh_t[1]+6, sh_t[2], sh_t[3]), dtype=float)
-                    out_train[:, 0:2, :, :] = flowxy_train
-                    out_train[:, 2:7, :, :] = imgs_train
-                    out_train[:, 8, :, :] = imgs_mask_train[:, 0, :, :]
+                    out_train[:, :, :, 0:2] = flowxy_train
+                    out_train[:, :, :, 2:7] = imgs_train
+                    out_train[:, :, :, 8] = imgs_mask_train[:, :, :, 0]
                     sh_v = flowxy_valid.shape
                     out_valid = np.zeros((sh_v[0], sh_v[1]+3, sh_v[2], sh_v[3]), dtype=float)
-                    out_valid[:, 0:2, :, :] = flowxy_valid
-                    out_valid[:, 2:4, :, :] = imgs_valid
-                    out_valid[:, 4, :, :] = imgs_mask_valid[:, 0, :, :]
+                    out_valid[:, :, :, 0:2] = flowxy_valid
+                    out_valid[:, :, :, 2:4] = imgs_valid
+                    out_valid[:, :, :, 4] = imgs_mask_valid[:, :, :, 0]
                 else:
                     out_train = flowxy_train
                     out_valid = flowxy_valid
@@ -974,8 +988,8 @@ def fit_train_batch(dat, set_):
             if set_.diag == 1:
                 y_pred = model.predict(imgs_train, verbose=1)
                 y_true = out_train
-                score_ed = K.eval(ed_clip(K.variable(y_true[:, 0:2, :, :]), K.variable(y_pred[:, :, :, :])))
-                score_ed_norm_sum2 = K.eval(ed_norm_sum2(K.variable(y_true[:, 0:2, :, :]), K.variable(y_pred[:, :, :, :])))
+                score_ed = K.eval(ed_clip(K.variable(y_true[:, :, :, 0:2]), K.variable(y_pred[:, :, :, :])))
+                score_ed_norm_sum2 = K.eval(ed_norm_sum2(K.variable(y_true[:, :, :, 0:2]), K.variable(y_pred[:, :, :, :])))
 
 def main():
     # Get initialization

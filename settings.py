@@ -78,7 +78,7 @@ def get_set():
     setting.loss = 'ed_norm_sum2'   # dice, binary_xe, xe, mse, ed_clip, l1_loss, l2_loss, ed_ssd_loss
     setting.mdl_type = 'flownet4'   # unet, siamese, flownet
     setting.batch_shuffle = 0       # batch shuffling before each epoch
-    setting.no_epochs = 100         # epochs
+    setting.no_epochs = 10         # epochs
     setting.b_size = 4              # batch size
     setting.learning_rate = 1e-5    # learning rate
     setting.p_valid = 0.1           # size of validation set
@@ -86,8 +86,8 @@ def get_set():
 
     # Data shuffle
     setting.datashuffle = 1         # shuffle images from folder
-    setting.shuffle_train = 0    # shuffle images before storing to HDF5 file (only TRAIN data)
-    setting.shuffle_test = 0  # shuffle images before storing to HDF5 file (only TRAIN data)
+    setting.shuffle_train = 0       # shuffle images before storing to HDF5 file (only TRAIN data)
+    setting.shuffle_test = 0        # shuffle images before storing to HDF5 file (only TRAIN data)
 
     # Input setting
     setting.ch_img = 6              # number of input channel (2 RGB = 6 channels)
@@ -107,7 +107,7 @@ def get_set():
     setting.ov_shuf = 1
     setting.ov_default = 0.5        # default overlap
     setting.ov_step = 0.05          # 0.05
-    setting.ov_start = 0.5        # 0.001
+    setting.ov_start = 0.5          # 0.001
     setting.ov_stop = 0.95
     setting.ov_batch = np.arange(setting.ov_start, setting.ov_stop + setting.ov_step, setting.ov_step)
 
@@ -117,10 +117,10 @@ def get_set():
     setting.initializer = 'glorot_uniform'  # XAVIER = glorot_uniform, glorot_normal, he_uniform ,he_normal
 
     # Patches / Centroid setting
-    setting.h_patch = 128          # patch output in pixel
-    setting.w_patch = 128          # patch output in pixel
+    setting.h_patch = 128           # patch output in pixel
+    setting.w_patch = 128           # patch output in pixel
     setting.no_patches = 2          # no of patches per centroids
-    setting.no_centroid = 1        # no of centroids
+    setting.no_centroid = 1         # no of centroids
     setting.tot_centroid = setting.no_centroid * len(setting.ov_batch)
 
     # Settings registration
@@ -138,25 +138,25 @@ def get_set():
 
     # Data Augmentation (Noise, Blurr, Contrast, Gamma, Channel shift)
     setting.dataugm = 1
-    setting.dataugm_ratio = 0.5     # amount
-    setting.dataugm_level = 10      # number of augmentation levels
-    setting.noise_gauss = [0, 0.2]  # 0, 0.5
-    setting.noise_sp = [0, 0.2]     # 0, 0.5
-    setting.blur_gauss = [0, 2]      # 0,3
-    setting.blur_median = [1, 3]     # 1,5
-    setting.light_contrast = []      # statically defined in data_augment.py
+    setting.dataugm_ratio = 0.5         # amount
+    setting.dataugm_level = 10          # number of augmentation levels
+    setting.noise_gauss = [0, 0.2]      # 0, 0.5
+    setting.noise_sp = [0, 0.2]         # 0, 0.5
+    setting.blur_gauss = [0, 2]         # 0,3
+    setting.blur_median = [1, 3]        # 1,5
+    setting.light_contrast = []         # statically defined in data_augment.py
     setting.light_gamma = [0.6, 1.4]
-    setting.ch_shift_range = [0, 3]  # select channels to shift
+    setting.ch_shift_range = [0, 3]     # select channels to shift
 
     # Data Augmentation (Rotation)
-    setting.setup_rot = 1          # select rotation augmentation
+    setting.setup_rot = 1           # select rotation augmentation
     setting.rot_ratio = 0.5         # amount
     setting.rot_angle = [-30, +30]  # range in degree
 
     # Data Augmentation (Scale)
     setting.setup_scale = 0         # select scaling augmentation
     setting.scl_ratio = 0.5         # amount
-    setting.scl_range = [-40, +40]   # range in pixels
+    setting.scl_range = [-40, +40]  # range in pixels
 
     # Data Augmentation (Shear)
     setting.setup_shear = 0         # select shearing augmentation

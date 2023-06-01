@@ -48,10 +48,13 @@ setting.no_centroid = 1        # no of centroids
 ```
 Run the following script to **train** and **test** the model.
 ```
-#Create Dataset + Train Model
+#Create Dataset
+python main_dataset.py
+
+#Train Model
 python main_train.py
 
-#Evaluate Model
+#Test Model
 python main_test.py
 ```
 

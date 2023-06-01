@@ -135,12 +135,28 @@ def rd_hdf5_batch(filename, set_, scaling, list_s, readtype):
 
     # Read list of slices (1D)
     if list_flag == 1:
-        imgs1_1d = np.ndarray((no_slices, h*w*3), dtype=np.uint8)
-        imgs2_1d = np.ndarray((no_slices, h*w*3), dtype=np.uint8)
-        label_1d = np.ndarray((no_slices, h*w), dtype=np.uint8)
+        # imgs1_1d = np.ndarray((no_slices, h*w*3), dtype=np.uint8)
+        # imgs2_1d = np.ndarray((no_slices, h*w*3), dtype=np.uint8)
+        # label_1d = np.ndarray((no_slices, h*w), dtype=np.uint8)
+        # imgs_id = np.ndarray((no_slices), dtype=np.uint8)
+        # flowx_1d = np.ndarray((no_slices, h*w), dtype=np.float32)
+        # flowy_1d = np.ndarray((no_slices, h*w), dtype=np.float32)
+        # for idx, slice in enumerate(list_s):
+        #     if not idx % 100:
+        #         print('Read shuffled data:', idx, ' /', len(list_s))
+        #     imgs1_1d[idx, :] = dset1[slice, :]
+        #     imgs2_1d[idx, :] = dset2[slice, :]
+        #     label_1d[idx, :] = dset3[slice, :]
+        #     imgs_id[idx] = dset4[0, slice]
+        #     if flag_flow == 1:
+        #         flowx_1d[idx, :] = dset5[slice, :]
+        #         flowy_1d[idx, :] = dset6[slice, :]
+        imgs1_1d = np.ndarray((h*w*3, no_slices), dtype=np.uint8)
+        imgs2_1d = np.ndarray((h*w*3, no_slices), dtype=np.uint8)
+        label_1d = np.ndarray((h*w, no_slices), dtype=np.uint8)
         imgs_id = np.ndarray((no_slices), dtype=np.uint8)
-        flowx_1d = np.ndarray((no_slices, h*w), dtype=np.float32)
-        flowy_1d = np.ndarray((no_slices, h*w), dtype=np.float32)
+        flowx_1d = np.ndarray((h*w, no_slices), dtype=np.float32)
+        flowy_1d = np.ndarray((h*w, no_slices), dtype=np.float32)
         for idx, slice in enumerate(list_s):
             if not idx % 100:
                 print('Read shuffled data:', idx, ' /', len(list_s))
@@ -151,23 +167,29 @@ def rd_hdf5_batch(filename, set_, scaling, list_s, readtype):
             if flag_flow == 1:
                 flowx_1d[idx, :] = dset5[slice, :]
                 flowy_1d[idx, :] = dset6[slice, :]
-
     # Reshape doc outputs (2D)
     total = imgs1_1d.shape[0]
     if total < no_slices:
         print('more slices selected than existing!')
-    imgs = np.ndarray((total, 6, h, w), dtype=np.uint8)
-    imgs[:, 0:3, :, :] = np.reshape(imgs1_1d, (no_slices, 3, h, w))
-    imgs[:, 3:6, :, :] = np.reshape(imgs2_1d, (no_slices, 3, h, w))
-    imgs_mask = np.ndarray((total, 1, h, w), dtype=np.uint8)
-    imgs_mask[:, 0, :, :] = np.reshape(label_1d, (no_slices, h, w))
+    # imgs = np.ndarray((total, 6, h, w), dtype=np.uint8)
+    # imgs[:, 0:3, :, :] = np.reshape(imgs1_1d, (no_slices, 3, h, w))
+    # imgs[:, 3:6, :, :] = np.reshape(imgs2_1d, (no_slices, 3, h, w))
+    # imgs_mask = np.ndarray((total, 1, h, w), dtype=np.uint8)
+    # imgs_mask[:, 0, :, :] = np.reshape(label_1d, (no_slices, h, w))
+    imgs = np.ndarray((total, h, w, 6), dtype=np.uint8)
+    imgs[:, :, :, 0:3] = np.reshape(imgs1_1d, (no_slices, h, w, 3))
+    imgs[:, :, :, 3:6] = np.reshape(imgs2_1d, (no_slices, h, w, 3))
+    imgs_mask = np.ndarray((total, h, w, 1), dtype=np.uint8)
+    imgs_mask[:, :, :, 0] = np.reshape(label_1d, (no_slices, h, w))
 
     # Reshape optical flow outputs (2D)
     if flag_flow == 1:
-        flowxy = np.ndarray((total, 2, h, w), dtype=np.float32)  # int16
-        flowxy[:, 0, :, :] = np.reshape(flowx_1d, (no_slices, h, w))
-        flowxy[:, 1, :, :] = np.reshape(flowy_1d, (no_slices, h, w))
-
+        # flowxy = np.ndarray((total, 2, h, w), dtype=np.float32)  # int16
+        # flowxy[:, 0, :, :] = np.reshape(flowx_1d, (no_slices, h, w))
+        # flowxy[:, 1, :, :] = np.reshape(flowy_1d, (no_slices, h, w))
+        flowxy = np.ndarray((total, h, w, 2), dtype=np.float32)  # int16
+        flowxy[:, :, :, 0] = np.reshape(flowx_1d, (no_slices, h, w))
+        flowxy[:, :, :, 1] = np.reshape(flowy_1d, (no_slices, h, w))
     return imgs, imgs_mask, imgs_id, flowxy
 
 

@@ -9,8 +9,8 @@ from keras.models import Model, Sequential
 from keras import backend as K
 from keras.layers import ZeroPadding2D, Layer, InputSpec
 
-#K.set_image_data_format('channels_first')       # Theano dimension ordering
-K.set_image_data_format('channels_last')       # Theano dimension ordering
+#K.set_image_data_format('channels_first')     # Theano dimension ordering
+K.set_image_data_format('channels_last')       # NHWC (TF) dimension ordering
 
 
 # Extending the ZeroPadding2D layer to do reflection padding instead.
@@ -160,7 +160,7 @@ class MirrorPadding2D(Layer):
 # Classic - UNet
 def get_unet(set):
     # new
-    inputs = Input((set.ch_img, set.h_out, set.w_out))
+    inputs = Input((set.h_out, set.w_out, set.ch_img))
 
     conv1 = Conv2D(32, (3, 3), padding='same', activation='relu')(inputs)
     conv1 = Conv2D(32, (3, 3), padding='same', activation='relu')(conv1)
@@ -183,19 +183,19 @@ def get_unet(set):
     conv5 = Conv2D(512, (3, 3), padding='same', activation='relu')(conv5)
 
     # Upscaling
-    up6 = concatenate([UpSampling2D(size=(2, 2))(conv5), conv4], axis=1)
+    up6 = concatenate([UpSampling2D(size=(2, 2))(conv5), conv4], axis=3)
     conv6 = Conv2D(256, (3, 3), padding='same', activation='relu')(up6)
     conv6 = Conv2D(256, (3, 3), padding='same', activation='relu')(conv6)
 
-    up7 = concatenate([UpSampling2D(size=(2, 2))(conv6), conv3], axis=1)
+    up7 = concatenate([UpSampling2D(size=(2, 2))(conv6), conv3], axis=3)
     conv7 = Conv2D(128, (3, 3), padding='same', activation='relu')(up7)
     conv7 = Conv2D(128, (3, 3), padding='same', activation='relu')(conv7)
 
-    up8 = concatenate([UpSampling2D(size=(2, 2))(conv7), conv2], axis=1)
+    up8 = concatenate([UpSampling2D(size=(2, 2))(conv7), conv2], axis=3)
     conv8 = Conv2D(64, (3, 3), padding='same', activation='relu')(up8)
     conv8 = Conv2D(64, (3, 3), padding='same', activation='relu')(conv8)
 
-    up9 = concatenate([UpSampling2D(size=(2, 2))(conv8), conv1], axis=1)
+    up9 = concatenate([UpSampling2D(size=(2, 2))(conv8), conv1], axis=3)
     conv9 = Conv2D(32, (3, 3), padding='same', activation='relu')(up9)
     conv9 = Conv2D(32, (3, 3), padding='same', activation='relu')(conv9)
 
@@ -209,7 +209,7 @@ def get_unet(set):
 # FlowNet
 def get_flownet(set_):
     # new
-    inputs = Input((set_.ch_img, set_.h_out, set_.w_out))
+    inputs = Input((set_.h_out, set_.w_out, set_.ch_img))
 
     conv1 = Conv2D(32, (3, 3), padding='same', activation='relu')(inputs)
     conv1 = Conv2D(32, (3, 3), padding='same', activation='relu')(conv1)
@@ -232,19 +232,19 @@ def get_flownet(set_):
     conv5 = Conv2D(512, (3, 3), padding='same', activation='relu')(conv5)
 
     # Upscaling
-    up6 = concatenate([UpSampling2D(size=(2, 2))(conv5), conv4], axis=1)
+    up6 = concatenate([UpSampling2D(size=(2, 2))(conv5), conv4], axis=3)
     conv6 = Conv2D(256, (3, 3), padding='same', activation='relu')(up6)
     conv6 = Conv2D(256, (3, 3), padding='same', activation='relu')(conv6)
 
-    up7 = concatenate([UpSampling2D(size=(2, 2))(conv6), conv3], axis=1)
+    up7 = concatenate([UpSampling2D(size=(2, 2))(conv6), conv3], axis=3)
     conv7 = Conv2D(128, (3, 3), padding='same', activation='relu')(up7)
     conv7 = Conv2D(128, (3, 3), padding='same', activation='relu')(conv7)
 
-    up8 = concatenate([UpSampling2D(size=(2, 2))(conv7), conv2], axis=1)
+    up8 = concatenate([UpSampling2D(size=(2, 2))(conv7), conv2], axis=3)
     conv8 = Conv2D(64, (3, 3), padding='same', activation='relu')(up8)
     conv8 = Conv2D(64, (3, 3), padding='same', activation='relu')(conv8)
 
-    up9 = concatenate([UpSampling2D(size=(2, 2))(conv8), conv1], axis=1)
+    up9 = concatenate([UpSampling2D(size=(2, 2))(conv8), conv1], axis=3)
     conv9 = Conv2D(32, (3, 3), padding='same', activation='relu')(up9)
     conv9 = Conv2D(32, (3, 3), padding='same', activation='relu')(conv9)
 
@@ -256,7 +256,7 @@ def get_flownet(set_):
 
 def get_flownet2(set_):
     # new
-    inputs = Input((set_.ch_img, set_.h_out, set_.w_out))
+    inputs = Input((set_.h_out, set_.w_out, set_.ch_img))
 
     conv1 = Conv2D(32, (7, 7), padding='same', activation='relu')(inputs)
     pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
@@ -284,22 +284,22 @@ def get_flownet2(set_):
 
 
     # Upscaling
-    up5 = concatenate([UpSampling2D(size=(2, 2))(conv6), conv5_1], axis=1)
+    up5 = concatenate([UpSampling2D(size=(2, 2))(conv6), conv5_1], axis=3)
     flow6 = Conv2D(512, (3, 3), padding='same', activation='relu')(up5)
 
-    up4 = concatenate([UpSampling2D(size=(2, 2))(flow6), conv4_1], axis=1)
+    up4 = concatenate([UpSampling2D(size=(2, 2))(flow6), conv4_1], axis=3)
     flow5 = Conv2D(256, (3, 3), padding='same', activation='relu')(up4)
 
-    up3 = concatenate([UpSampling2D(size=(2, 2))(flow5), conv3_1], axis=1)
+    up3 = concatenate([UpSampling2D(size=(2, 2))(flow5), conv3_1], axis=3)
     flow4 = Conv2D(128, (5, 5), padding='same', activation='relu')(up3)
 
-    up2 = concatenate([UpSampling2D(size=(2, 2))(flow4), conv2_1], axis=1)
+    up2 = concatenate([UpSampling2D(size=(2, 2))(flow4), conv2_1], axis=3)
     flow3 = Conv2D(64, (5, 5), padding='same', activation='relu')(up2)
 
-    up1 = concatenate([UpSampling2D(size=(2, 2))(flow3), conv1_1], axis=1)
+    up1 = concatenate([UpSampling2D(size=(2, 2))(flow3), conv1_1], axis=3)
     flow2 = Conv2D(32, (5, 5), padding='same', activation='relu')(up1)
 
-    up0 = concatenate([UpSampling2D(size=(2, 2))(flow2), conv1], axis=1)
+    up0 = concatenate([UpSampling2D(size=(2, 2))(flow2), conv1], axis=3)
     flow1 = Conv2D(32, (5, 5), padding='same', activation='relu')(up0)
 
     output1 = Conv2D(2, (3, 3), activation='tanh', padding='same')(flow1)
@@ -313,7 +313,8 @@ def get_flownet2(set_):
 def get_flownet4(set_):
     # Settings
     pb_drop = 0.0
-    inputs = Input((set_.ch_img, set_.h_out, set_.w_out))
+    # inputs = Input((set_.ch_img, set_.h_out, set_.w_out))
+    inputs = Input((set_.h_out, set_.w_out, set_.ch_img))
 
     conv1 = Conv2D(64, (3, 3), padding='same', activation='relu', kernel_initializer=set_.initializer)(inputs)
     conv1 = Conv2D(64, (3, 3), padding='same', activation='relu', kernel_initializer=set_.initializer)(conv1)
@@ -340,19 +341,19 @@ def get_flownet4(set_):
     conv5 = Conv2D(1024, (3, 3), padding='same', activation='relu', kernel_initializer=set_.initializer)(conv5)
 
     # Upscaling
-    up6 = concatenate([UpSampling2D(size=(2, 2))(conv5), conv4], axis=1)
+    up6 = concatenate([UpSampling2D(size=(2, 2))(conv5), conv4], axis=3)
     conv6 = Conv2D(512, (3, 3), padding='same', activation='relu', kernel_initializer=set_.initializer)(up6)
     conv6 = Conv2D(512, (3, 3), padding='same', activation='relu', kernel_initializer=set_.initializer)(conv6)
 
-    up7 = concatenate([UpSampling2D(size=(2, 2))(conv6), conv3], axis=1)
+    up7 = concatenate([UpSampling2D(size=(2, 2))(conv6), conv3], axis=3)
     conv7 = Conv2D(256, (3, 3), padding='same', activation='relu', kernel_initializer=set_.initializer)(up7)
     conv7 = Conv2D(256, (3, 3), padding='same', activation='relu', kernel_initializer=set_.initializer)(conv7)
 
-    up8 = concatenate([UpSampling2D(size=(2, 2))(conv7), conv2], axis=1)
+    up8 = concatenate([UpSampling2D(size=(2, 2))(conv7), conv2], axis=3)
     conv8 = Conv2D(128, (3, 3), padding='same', activation='relu', kernel_initializer=set_.initializer)(up8)
     conv8 = Conv2D(128, (3, 3), padding='same', activation='relu', kernel_initializer=set_.initializer)(conv8)
 
-    up9 = concatenate([UpSampling2D(size=(2, 2))(conv8), conv1], axis=1)
+    up9 = concatenate([UpSampling2D(size=(2, 2))(conv8), conv1], axis=3)
     conv9 = Conv2D(64, (3, 3), padding='same', activation='relu', kernel_initializer=set_.initializer)(up9)
     conv9 = Conv2D(64, (3, 3), padding='same', activation='relu', kernel_initializer=set_.initializer)(conv9)
 
