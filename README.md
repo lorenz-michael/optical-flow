@@ -1,4 +1,4 @@
-# Abouth the Project
+# Optical-Flow (UNet, FlowNet)
 This project is a python implementation of multiple Optical Flow methods (UNet, FlowNet) for image stitching applications. The code is implemented in Keras-TensorFlow.
 
 
